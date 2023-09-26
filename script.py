@@ -1,5 +1,4 @@
 import textwrap
-
 import requests
 import logging
 import time
