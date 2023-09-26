@@ -5,6 +5,8 @@ import telegram
 import argparse
 from environs import Env
 
+logger = logging.getLogger('notice')
+
 
 def get_last_timestamp(dvmn_token: str, url='https://dvmn.org/api/user_reviews/') -> float:
     """Получает последний timestamp пользователя."""
@@ -44,6 +46,8 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
 
+    logger.setLevel(logging.WARNING)
+
     parser = argparse.ArgumentParser(
         description='Скрипт запрашивает данные у Devman о свежих проверенных работах ученика'
                     'И сообщает о результатах проверки ученику в созданный им телеграм бот')
@@ -54,8 +58,6 @@ if __name__ == '__main__':
         help='Идентификатор пользователя в телеграм'
     )
     args = parser.parse_args()
-
-    logger = logging.getLogger('logger')
 
     dvmn_token = env.str("API_DEVMAN_TOKEN")
     telegram_bot_token = env.str('API_TELEGRAM_BOT_TOKEN')
