@@ -1,3 +1,5 @@
+import textwrap
+
 import requests
 import logging
 import time
@@ -33,12 +35,17 @@ def inform_verified_works(dvmn_token: str, chat_id: int, url='https://dvmn.org/a
     lesson_title = notice['lesson_title']
     lesson_url = notice['lesson_url']
     is_negative = notice['is_negative']
+    message = f'''
+    У вас проверили работу  "{lesson_title}."
+    
+    {"К сожалению в работе нашлись ошибки." if is_negative
+    else "Преподавателю все понравилось, можно приступать к следующему уроку!"}
+        
+    {lesson_url}'''
 
     bot.send_message(
         chat_id=chat_id,
-        text=f'У вас проверили работу "{lesson_title}"\n\n'
-             f'{"К сожалению в работе нашлись ошибки." if is_negative else "Преподавателю все понравилось, можно приступать к следующему уроку!"}\n\n'
-             f'{lesson_url}'
+        text=textwrap.dedent(message)
     )
 
 
