@@ -10,31 +10,31 @@ from environs import Env
 logger = logging.getLogger('notice')
 
 
-def get_last_timestamp(dvmn_token: str, url='https://dvmn.org/api/user_reviews/') -> float:
-    """Получает последний timestamp пользователя."""
+def makes_request(dvmn_token: str, timestamp=None, url='https://dvmn.org/api/long_polling/'):
+    """Делает запрос о статусе проверенных работ."""
+
     response = requests.get(
         url=url,
-        headers={'Authorization': f'Token {dvmn_token}'}
-    )
-    return response.json()['results'][0]['timestamp']
-
-
-def inform_verified_works(dvmn_token: str, chat_id: int, url='https://dvmn.org/api/long_polling/'):
-    """Делает запрос о статусе проверенных работ.
-
-    Если они есть, то уведомляет об этом пользователя в телеграм бот."""
-    response = requests.get(
-        url=url,
-        params={'timestamp': get_last_timestamp(dvmn_token)},
+        params={'timestamp': timestamp},
         headers={'Authorization': f'Token {dvmn_token}'},
         timeout=5
     )
     response.raise_for_status()
+    return response.json()
 
-    notice = response.json()['new_attempts'][0]
+
+def get_information(response: dict) -> tuple:
+    """Получает данные о работе из запроса."""
+    notice = response['new_attempts'][0]
     lesson_title = notice['lesson_title']
     lesson_url = notice['lesson_url']
     is_negative = notice['is_negative']
+    return lesson_title, lesson_url, is_negative
+
+
+def sends_message(chat_id: int, lesson_title: str, lesson_url: str, is_negative: bool) -> None:
+    """Отправляет в бот сообщение с результатами проверки."""
+
     message = f'''
     У вас проверили работу  "{lesson_title}."
     
@@ -73,9 +73,17 @@ if __name__ == '__main__':
 
     while True:
         try:
-            inform_verified_works(
-                dvmn_token=dvmn_token,
-                chat_id=args.chat_id
+            response = makes_request(dvmn_token=dvmn_token)
+
+            if response['status'] == 'timeout':
+                response = makes_request(dvmn_token=dvmn_token, timestamp=response['timestamp_to_request'])
+
+            lesson_title, lesson_url, is_negative = get_information(response)
+            sends_message(
+                chat_id=args.chat_id,
+                lesson_title=lesson_title,
+                lesson_url=lesson_url,
+                is_negative=is_negative
             )
         except requests.exceptions.ReadTimeout:
             logger.warning('Проверенных работ пока нет')
