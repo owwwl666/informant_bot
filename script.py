@@ -10,7 +10,7 @@ logger = logging.getLogger('notice')
 
 
 def makes_request(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/long_polling/'):
-    """Делает запрос о статусе проверенных работ."""
+    """Делает запрос на проверенные работы."""
 
     response = requests.get(
         url=url,
@@ -74,17 +74,17 @@ if __name__ == '__main__':
 
     while True:
         try:
-            response = makes_request(
+            verified_work = makes_request(
                 dvmn_token=dvmn_token,
                 timestamp=timestamp
             )
 
-            if response['status'] == 'timeout':
-                timestamp = response['timestamp_to_request']
+            if verified_work['status'] == 'timeout':
+                timestamp = verified_work['timestamp_to_request']
 
-            elif response['status'] == 'found':
-                timestamp = response['last_attempt_timestamp']
-                lesson_title, lesson_url, is_negative = get_information(response)
+            elif verified_work['status'] == 'found':
+                timestamp = verified_work['last_attempt_timestamp']
+                lesson_title, lesson_url, is_negative = get_information(verified_work)
                 sends_message(
                     chat_id=args.chat_id,
                     lesson_title=lesson_title,
