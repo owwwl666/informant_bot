@@ -9,7 +9,7 @@ from environs import Env
 logger = logging.getLogger('notice')
 
 
-def makes_request(dvmn_token: str, timestamp=None, url='https://dvmn.org/api/long_polling/'):
+def makes_request(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/long_polling/'):
     """Делает запрос о статусе проверенных работ."""
 
     response = requests.get(
@@ -70,20 +70,27 @@ if __name__ == '__main__':
 
     bot = telegram.Bot(token=telegram_bot_token)
 
+    timestamp = None
+
     while True:
         try:
-            response = makes_request(dvmn_token=dvmn_token)
+            response = makes_request(
+                dvmn_token=dvmn_token,
+                timestamp=timestamp
+            )
 
             if response['status'] == 'timeout':
-                response = makes_request(dvmn_token=dvmn_token, timestamp=response['timestamp_to_request'])
+                timestamp = response['timestamp_to_request']
 
-            lesson_title, lesson_url, is_negative = get_information(response)
-            sends_message(
-                chat_id=args.chat_id,
-                lesson_title=lesson_title,
-                lesson_url=lesson_url,
-                is_negative=is_negative
-            )
+            elif response['status'] == 'found':
+                timestamp = response['last_attempt_timestamp']
+                lesson_title, lesson_url, is_negative = get_information(response)
+                sends_message(
+                    chat_id=args.chat_id,
+                    lesson_title=lesson_title,
+                    lesson_url=lesson_url,
+                    is_negative=is_negative
+                )
         except requests.exceptions.ReadTimeout:
             logger.warning('Проверенных работ пока нет')
             continue
