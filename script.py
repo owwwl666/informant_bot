@@ -9,8 +9,10 @@ from environs import Env
 logger = logging.getLogger('notice')
 
 
-def makes_request(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/long_polling/'):
-    """Делает запрос на проверенные работы."""
+def make_request_verified_works(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/long_polling/'):
+    """Делает запрос на проверенные работы.
+
+    Возвращает словарь с данными о проверенной работе."""
 
     response = requests.get(
         url=url,
@@ -22,17 +24,15 @@ def makes_request(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/l
     return response.json()
 
 
-def get_information(response: dict) -> tuple:
-    """Получает данные о работе из запроса."""
+def prepare_data_for_message(response: dict) -> str:
+    """Подготавливает данные для отправки сообщения о результатах проверки.
+
+    Возвращает итоговое сообщение."""
+
     notice = response['new_attempts'][0]
     lesson_title = notice['lesson_title']
     lesson_url = notice['lesson_url']
     is_negative = notice['is_negative']
-    return lesson_title, lesson_url, is_negative
-
-
-def sends_message(chat_id: int, lesson_title: str, lesson_url: str, is_negative: bool) -> None:
-    """Отправляет в бот сообщение с результатами проверки."""
 
     message = f'''
     У вас проверили работу  "{lesson_title}."
@@ -42,10 +42,7 @@ def sends_message(chat_id: int, lesson_title: str, lesson_url: str, is_negative:
         
     {lesson_url}'''
 
-    bot.send_message(
-        chat_id=chat_id,
-        text=textwrap.dedent(message)
-    )
+    return textwrap.dedent(message)
 
 
 if __name__ == '__main__':
@@ -74,7 +71,7 @@ if __name__ == '__main__':
 
     while True:
         try:
-            verified_work = makes_request(
+            verified_work = make_request_verified_works(
                 dvmn_token=dvmn_token,
                 timestamp=timestamp
             )
@@ -84,12 +81,10 @@ if __name__ == '__main__':
 
             elif verified_work['status'] == 'found':
                 timestamp = verified_work['last_attempt_timestamp']
-                lesson_title, lesson_url, is_negative = get_information(verified_work)
-                sends_message(
+                message = prepare_data_for_message(response=verified_work)
+                bot.send_message(
                     chat_id=args.chat_id,
-                    lesson_title=lesson_title,
-                    lesson_url=lesson_url,
-                    is_negative=is_negative
+                    text=message
                 )
         except requests.exceptions.ReadTimeout:
             logger.warning('Проверенных работ пока нет')
