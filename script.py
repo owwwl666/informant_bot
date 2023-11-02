@@ -79,18 +79,18 @@ if __name__ == '__main__':
     bot = telegram.Bot(token=env.str('API_TELEGRAM_BOT_TOKEN'))
     log_bot = telegram.Bot(token=env.str('LOG_BOT_TOKEN'))
 
-    logging.basicConfig(format="%(levelname)s::%(message)s")
-    logger.setLevel(logging.WARNING)
-    logger.addHandler(TelegramLogsHandler(
-        bot=log_bot,
-        chat_id=args.chat_id
-    )
-    )
-
     timestamp = None
 
     while True:
         try:
+            logging.basicConfig(format="%(levelname)s::%(message)s")
+            logger.setLevel(logging.WARNING)
+            logger.addHandler(TelegramLogsHandler(
+                bot=log_bot,
+                chat_id=args.chat_id
+            )
+            )
+
             verified_work = make_request_verified_works(
                 dvmn_token=dvmn_token,
                 timestamp=timestamp
@@ -106,10 +106,16 @@ if __name__ == '__main__':
                     chat_id=args.chat_id,
                     text=message
                 )
+
         except requests.exceptions.ReadTimeout:
             logger.warning('Проверенных работ пока нет')
+            time.sleep(60)
             continue
         except requests.exceptions.ConnectionError:
             logger.error('Отсутствует подключение к сети')
-            time.sleep(5)
+            time.sleep(60)
+            continue
+        except Exception as err:
+            logger.error(err, exc_info=True)
+            time.sleep(60)
             continue
