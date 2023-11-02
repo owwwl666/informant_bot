@@ -9,6 +9,20 @@ from environs import Env
 logger = logging.getLogger('notice')
 
 
+class TelegramLogsHandler(logging.Handler):
+    def __init__(self, bot, chat_id):
+        super().__init__()
+        self.bot = bot
+        self.chat_id = chat_id
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.bot.send_message(
+            chat_id=self.chat_id,
+            text=log_entry
+        )
+
+
 def make_request_verified_works(dvmn_token: str, timestamp: float, url='https://dvmn.org/api/long_polling/'):
     """Делает запрос на проверенные работы.
 
@@ -49,8 +63,6 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
 
-    logger.setLevel(logging.WARNING)
-
     parser = argparse.ArgumentParser(
         description='Скрипт запрашивает данные у Devman о свежих проверенных работах ученика'
                     'И сообщает о результатах проверки ученику в созданный им телеграм бот')
@@ -63,9 +75,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dvmn_token = env.str("API_DEVMAN_TOKEN")
-    telegram_bot_token = env.str('API_TELEGRAM_BOT_TOKEN')
 
-    bot = telegram.Bot(token=telegram_bot_token)
+    bot = telegram.Bot(token=env.str('API_TELEGRAM_BOT_TOKEN'))
+    log_bot = telegram.Bot(token=env.str('LOG_BOT_TOKEN'))
+
+    logging.basicConfig(format="%(levelname)s::%(message)s")
+    logger.setLevel(logging.WARNING)
+    logger.addHandler(TelegramLogsHandler(
+        bot=log_bot,
+        chat_id=args.chat_id
+    )
+    )
 
     timestamp = None
 
@@ -90,6 +110,6 @@ if __name__ == '__main__':
             logger.warning('Проверенных работ пока нет')
             continue
         except requests.exceptions.ConnectionError:
-            logger.warning('Отсутствует подключение к сети')
+            logger.error('Отсутствует подключение к сети')
             time.sleep(5)
             continue
