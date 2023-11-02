@@ -32,7 +32,7 @@ def make_request_verified_works(dvmn_token: str, timestamp: float, url='https://
         url=url,
         params={'timestamp': timestamp},
         headers={'Authorization': f'Token {dvmn_token}'},
-        timeout=5
+        timeout=30
     )
     response.raise_for_status()
     return response.json()
@@ -109,7 +109,6 @@ if __name__ == '__main__':
 
         except requests.exceptions.ReadTimeout:
             logger.warning('Проверенных работ пока нет')
-            time.sleep(60)
             continue
         except requests.exceptions.ConnectionError:
             logger.error('Отсутствует подключение к сети')
