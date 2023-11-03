@@ -82,16 +82,16 @@ if __name__ == '__main__':
 
     timestamp = None
 
+    logging.basicConfig(format="%(levelname)s::%(message)s")
+    logger.setLevel(logging.WARNING)
+    logger.addHandler(TelegramLogsHandler(
+        bot=log_bot,
+        chat_id=args.chat_id
+    )
+    )
+
     while True:
         try:
-            logging.basicConfig(format="%(levelname)s::%(message)s")
-            logger.setLevel(logging.WARNING)
-            logger.addHandler(TelegramLogsHandler(
-                bot=log_bot,
-                chat_id=args.chat_id
-            )
-            )
-
             verified_work = make_request_verified_works(
                 dvmn_token=dvmn_token,
                 timestamp=timestamp
