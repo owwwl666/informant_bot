@@ -1,9 +1,10 @@
-import textwrap
-import requests
-import logging
-import time
-import telegram
 import argparse
+import logging
+import telegram
+import textwrap
+import time
+
+import requests
 from environs import Env
 
 logger = logging.getLogger('notice')
